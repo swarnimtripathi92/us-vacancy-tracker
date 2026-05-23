@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Under Secretary Vacancy Tracker — GoI</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f0;min-height:100vh;padding:2rem 1rem;color:#1a1a1a}
+.wrap{max-width:760px;margin:0 auto}
+.header{text-align:center;padding:2rem 0 1.5rem;border-bottom:1px solid #e0e0d8;margin-bottom:2rem}
+.header h1{font-size:22px;font-weight:600;color:#1a1a1a;margin-bottom:6px}
+.header p{font-size:13px;color:#666}
+.card{background:#fff;border:1px solid #e0e0d8;border-radius:12px;padding:1.5rem;margin-bottom:1.5rem}
+.card h2{font-size:15px;font-weight:600;color:#1a1a1a;margin-bottom:1rem}
+label{display:block;font-size:13px;color:#555;margin-bottom:5px}
+select,input[type=number],input[type=text]{width:100%;height:40px;border:1px solid #ccc;border-radius:8px;padding:0 10px;font-size:14px;color:#1a1a1a;background:#fff;outline:none;transition:border 0.15s}
+select:focus,input:focus{border-color:#378add;box-shadow:0 0 0 3px rgba(55,138,221,0.12)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+@media(max-width:520px){.row{grid-template-columns:1fr}}
+.full{margin-bottom:14px}
+.btn{height:40px;padding:0 18px;border-radius:8px;border:1px solid #ccc;background:#fff;color:#1a1a1a;font-size:14px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all 0.15s;font-family:inherit}
+.btn:hover{background:#f0f0eb}
+.btn:active{transform:scale(0.98)}
+.btn-primary{background:#e6f1fb;color:#185fa5;border-color:#b5d4f4;font-weight:500}
+.btn-primary:hover{background:#cce3f7}
+.btn-danger{border-color:#f7c1c1;color:#a32d2d}
+.btn-danger:hover{background:#fcebeb}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:1.5rem}
+@media(max-width:400px){.stats{grid-template-columns:1fr 1fr}}
+.stat{background:#f5f5f0;border-radius:8px;padding:1rem;text-align:center}
+.stat-num{font-size:26px;font-weight:600;color:#1a1a1a}
+.stat-lbl{font-size:11px;color:#888;margin-top:3px}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:520px}
+th{text-align:left;font-weight:600;font-size:11px;color:#888;padding:8px 10px;border-bottom:1px solid #e8e8e0;white-space:nowrap;text-transform:uppercase;letter-spacing:0.03em}
+td{padding:10px 10px;border-bottom:1px solid #f0f0eb;color:#1a1a1a;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafaf7}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;background:#e6f1fb;color:#185fa5}
+.empty{text-align:center;padding:3rem 1rem;color:#bbb;font-size:13px}
+.empty-icon{font-size:32px;display:block;margin-bottom:8px}
+.search-wrap{position:relative;margin-bottom:12px}
+.search-wrap span{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:15px;color:#bbb;pointer-events:none}
+.search-bar{width:100%;height:38px;border:1px solid #ddd;border-radius:8px;padding:0 10px 0 34px;font-size:13px;color:#1a1a1a;background:#fff;outline:none}
+.search-bar:focus{border-color:#378add}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid #b5d4f4;border-top-color:#185fa5;border-radius:50%;animation:spin 0.6s linear infinite;vertical-align:-2px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:24px;right:24px;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:500;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:999;max-width:300px}
+.toast.ok{background:#eaf3de;color:#3b6d11;border:1px solid #c0dd97}
+.toast.err{background:#fcebeb;color:#a32d2d;border:1px solid #f7c1c1}
+.toast.show{opacity:1}
+.loader-overlay{display:none;position:fixed;inset:0;background:rgba(255,255,255,0.7);z-index:100;align-items:center;justify-content:center;font-size:14px;color:#555}
+.loader-overlay.show{display:flex}
+.refresh-note{font-size:11px;color:#aaa;margin-top:8px;text-align:right}
+.config-banner{background:#fff8e6;border:1px solid #f5d79e;border-radius:8px;padding:12px 16px;margin-bottom:1.5rem;font-size:13px;color:#7a5700;display:none}
+.config-banner a{color:#185fa5}
+</style>
+</head>
+<body>
+
+<div class="loader-overlay" id="loader">⏳ Please wait...</div>
+<div class="toast" id="toast"></div>
+
+<div class="wrap">
+
+  <!-- Config warning — shown if Script URL not set -->
+  <div class="config-banner" id="config-banner">
+    ⚠️ <strong>Setup pending:</strong> Google Apps Script URL configure nahi hua. 
+    <a href="https://github.com" target="_blank">README padho</a> ya neeche JS mein <code>SCRIPT_URL</code> set karo.
+  </div>
+
+  <div class="header">
+    <h1>🏛️ Under Secretary Vacancy Tracker</h1>
+    <p>Ministry / Department-wise US grade vacancy data — Government of India</p>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-num" id="st-entries">—</div><div class="stat-lbl">Ministries reported</div></div>
+    <div class="stat"><div class="stat-num" id="st-total">—</div><div class="stat-lbl">Total vacancies</div></div>
+    <div class="stat"><div class="stat-num" id="st-avg">—</div><div class="stat-lbl">Avg per Ministry</div></div>
+  </div>
+
+  <div class="card">
+    <h2>📋 Submit vacancy data</h2>
+    <div class="full">
+      <label for="sel-min">Ministry / Department *</label>
+      <select id="sel-min">
+        <option value="">— Select Ministry / Department —</option>
+        <optgroup label="Ministry of Agriculture and Farmers Welfare">
+          <option>Dept. of Agriculture and Farmers Welfare</option>
+          <option>Dept. of Agricultural Research and Education</option>
+        </optgroup>
+        <optgroup label="Ministry of Ayush">
+          <option>Ministry of Ayush</option>
+        </optgroup>
+        <optgroup label="Ministry of Chemicals and Fertilizers">
+          <option>Dept. of Chemicals and Petro-Chemicals</option>
+          <option>Dept. of Fertilizers</option>
+          <option>Dept. of Pharmaceuticals</option>
+        </optgroup>
+        <optgroup label="Ministry of Civil Aviation">
+          <option>Ministry of Civil Aviation</option>
+        </optgroup>
+        <optgroup label="Ministry of Coal">
+          <option>Ministry of Coal</option>
+        </optgroup>
+        <optgroup label="Ministry of Commerce and Industry">
+          <option>Dept. of Commerce</option>
+          <option>Dept. for Promotion of Industry and Internal Trade</option>
+        </optgroup>
+        <optgroup label="Ministry of Communications">
+          <option>Dept. of Telecommunications</option>
+          <option>Dept. of Posts</option>
+        </optgroup>
+        <optgroup label="Ministry of Consumer Affairs, Food and Public Distribution">
+          <option>Dept. of Consumer Affairs</option>
+          <option>Dept. of Food and Public Distribution</option>
+        </optgroup>
+        <optgroup label="Ministry of Cooperation">
+          <option>Ministry of Cooperation</option>
+        </optgroup>
+        <optgroup label="Ministry of Corporate Affairs">
+          <option>Ministry of Corporate Affairs</option>
+        </optgroup>
+        <optgroup label="Ministry of Culture">
+          <option>Ministry of Culture</option>
+        </optgroup>
+        <optgroup label="Ministry of Defence">
+          <option>Dept. of Defence</option>
+          <option>Dept. of Military Affairs</option>
+          <option>Dept. of Defence Production</option>
+          <option>Dept. of Defence Research and Development</option>
+          <option>Dept. of Ex-Servicemen Welfare</option>
+        </optgroup>
+        <optgroup label="Ministry of Development of North Eastern Region">
+          <option>Ministry of Development of North Eastern Region</option>
+        </optgroup>
+        <optgroup label="Ministry of Earth Sciences">
+          <option>Ministry of Earth Sciences</option>
+        </optgroup>
+        <optgroup label="Ministry of Electronics and Information Technology">
+          <option>Ministry of Electronics and Information Technology</option>
+        </optgroup>
+        <optgroup label="Ministry of Environment, Forest and Climate Change">
+          <option>Ministry of Environment, Forest and Climate Change</option>
+        </optgroup>
+        <optgroup label="Ministry of External Affairs">
+          <option>Ministry of External Affairs</option>
+        </optgroup>
+        <optgroup label="Ministry of Finance">
+          <option>Dept. of Economic Affairs</option>
+          <option>Dept. of Expenditure</option>
+          <option>Dept. of Revenue</option>
+          <option>Dept. of Investment and Public Asset Management (DIPAM)</option>
+          <option>Dept. of Financial Services</option>
+          <option>Dept. of Public Enterprises</option>
+        </optgroup>
+        <optgroup label="Ministry of Fisheries, Animal Husbandry and Dairying">
+          <option>Dept. of Fisheries</option>
+          <option>Dept. of Animal Husbandry and Dairying</option>
+        </optgroup>
+        <optgroup label="Ministry of Food Processing Industries">
+          <option>Ministry of Food Processing Industries</option>
+        </optgroup>
+        <optgroup label="Ministry of Health and Family Welfare">
+          <option>Dept. of Health and Family Welfare</option>
+          <option>Dept. of Health Research</option>
+        </optgroup>
+        <optgroup label="Ministry of Heavy Industries">
+          <option>Ministry of Heavy Industries</option>
+        </optgroup>
+        <optgroup label="Ministry of Home Affairs">
+          <option>Dept. of Internal Security</option>
+          <option>Dept. of States</option>
+          <option>Dept. of Official Language</option>
+          <option>Dept. of Home</option>
+          <option>Dept. of Jammu, Kashmir and Ladakh Affairs</option>
+          <option>Dept. of Border Management</option>
+        </optgroup>
+        <optgroup label="Ministry of Housing and Urban Affairs">
+          <option>Ministry of Housing and Urban Affairs</option>
+        </optgroup>
+        <optgroup label="Ministry of Education">
+          <option>Dept. of School Education and Literacy</option>
+          <option>Dept. of Higher Education</option>
+        </optgroup>
+        <optgroup label="Ministry of Information and Broadcasting">
+          <option>Ministry of Information and Broadcasting</option>
+        </optgroup>
+        <optgroup label="Ministry of Jal Shakti">
+          <option>Dept. of Water Resources, River Development and Ganga Rejuvenation</option>
+          <option>Dept. of Drinking Water and Sanitation</option>
+        </optgroup>
+        <optgroup label="Ministry of Labour and Employment">
+          <option>Ministry of Labour and Employment</option>
+        </optgroup>
+        <optgroup label="Ministry of Law and Justice">
+          <option>Dept. of Legal Affairs</option>
+          <option>Legislative Department</option>
+          <option>Dept. of Justice</option>
+        </optgroup>
+        <optgroup label="Ministry of Micro, Small and Medium Enterprises">
+          <option>Ministry of Micro, Small and Medium Enterprises</option>
+        </optgroup>
+        <optgroup label="Ministry of Mines">
+          <option>Ministry of Mines</option>
+        </optgroup>
+        <optgroup label="Ministry of Minority Affairs">
+          <option>Ministry of Minority Affairs</option>
+        </optgroup>
+        <optgroup label="Ministry of New and Renewable Energy">
+          <option>Ministry of New and Renewable Energy</option>
+        </optgroup>
+        <optgroup label="Ministry of Panchayati Raj">
+          <option>Ministry of Panchayati Raj</option>
+        </optgroup>
+        <optgroup label="Ministry of Parliamentary Affairs">
+          <option>Ministry of Parliamentary Affairs</option>
+        </optgroup>
+        <optgroup label="Ministry of Personnel, Public Grievances and Pensions">
+          <option>Dept. of Personnel and Training</option>
+          <option>Dept. of Administrative Reforms and Public Grievances</option>
+          <option>Dept. of Pensions and Pensioners Welfare</option>
+        </optgroup>
+        <optgroup label="Ministry of Petroleum and Natural Gas">
+          <option>Ministry of Petroleum and Natural Gas</option>
+        </optgroup>
+        <optgroup label="Ministry of Planning">
+          <option>Ministry of Planning</option>
+        </optgroup>
+        <optgroup label="Ministry of Ports, Shipping and Waterways">
+          <option>Ministry of Ports, Shipping and Waterways</option>
+        </optgroup>
+        <optgroup label="Ministry of Power">
+          <option>Ministry of Power</option>
+        </optgroup>
+        <optgroup label="Ministry of Railways">
+          <option>Ministry of Railways</option>
+        </optgroup>
+        <optgroup label="Ministry of Road Transport and Highways">
+          <option>Ministry of Road Transport and Highways</option>
+        </optgroup>
+        <optgroup label="Ministry of Rural Development">
+          <option>Dept. of Rural Development</option>
+          <option>Dept. of Land Resources</option>
+        </optgroup>
+        <optgroup label="Ministry of Science and Technology">
+          <option>Dept. of Science and Technology</option>
+          <option>Dept. of Scientific and Industrial Research</option>
+          <option>Dept. of Bio-Technology</option>
+        </optgroup>
+        <optgroup label="Ministry of Skill Development and Entrepreneurship">
+          <option>Ministry of Skill Development and Entrepreneurship</option>
+        </optgroup>
+        <optgroup label="Ministry of Social Justice and Empowerment">
+          <option>Dept. of Social Justice and Empowerment</option>
+          <option>Dept. of Empowerment of Persons with Disabilities (Divyangjan)</option>
+        </optgroup>
+        <optgroup label="Ministry of Statistics and Programme Implementation">
+          <option>Ministry of Statistics and Programme Implementation</option>
+        </optgroup>
+        <optgroup label="Ministry of Steel">
+          <option>Ministry of Steel</option>
+        </optgroup>
+        <optgroup label="Ministry of Textiles">
+          <option>Ministry of Textiles</option>
+        </optgroup>
+        <optgroup label="Ministry of Tourism">
+          <option>Ministry of Tourism</option>
+        </optgroup>
+        <optgroup label="Ministry of Tribal Affairs">
+          <option>Ministry of Tribal Affairs</option>
+        </optgroup>
+        <optgroup label="Ministry of Women and Child Development">
+          <option>Ministry of Women and Child Development</option>
+        </optgroup>
+        <optgroup label="Ministry of Youth Affairs and Sports">
+          <option>Dept. of Youth Affairs</option>
+          <option>Dept. of Sports</option>
+        </optgroup>
+        <optgroup label="Constitutional / Other Bodies">
+          <option>Dept. of Atomic Energy</option>
+          <option>Dept. of Space</option>
+          <option>Cabinet Secretariat</option>
+          <option>President's Secretariat</option>
+          <option>Prime Minister's Office</option>
+          <option>NITI Aayog</option>
+          <option>National Security Council Secretariat</option>
+        </optgroup>
+      </select>
+    </div>
+    <div class="row">
+      <div>
+        <label for="inp-vac">No. of US vacancies *</label>
+        <input type="number" id="inp-vac" min="0" max="999" placeholder="e.g. 3">
+      </div>
+      <div>
+        <label for="inp-name">Submitted by (optional)</label>
+        <input type="text" id="inp-name" placeholder="Name / designation">
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary" id="btn-submit" onclick="submitEntry()">✅ Submit entry</button>
+      <button class="btn" onclick="clearForm()">✕ Clear</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📊 Consolidated list — all ministries</h2>
+    <div class="search-wrap">
+      <span>🔍</span>
+      <input class="search-bar" type="text" id="search" placeholder="Search Ministry / Department..." oninput="filterTable()">
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Ministry / Department</th>
+            <th>US Vacancies</th>
+            <th>Submitted by</th>
+            <th>Timestamp</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbl-body"></tbody>
+      </table>
+      <div id="empty-state" class="empty">
+        <span class="empty-icon">📭</span>
+        Loading data...
+      </div>
+    </div>
+    <div class="refresh-note">Data auto-refreshes every 60 seconds.</div>
+    <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn" onclick="loadData()">🔄 Refresh</button>
+      <button class="btn" onclick="exportCSV()">⬇️ Export CSV</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ============================================================
+// 👇 YAHAN APNA APPS SCRIPT URL PASTE KARO
+// ============================================================
+const SCRIPT_URL = "YOUR_APPS_SCRIPT_URL_HERE";
+// ============================================================
+
+let allData = [];
+
+function init() {
+  if (!SCRIPT_URL || SCRIPT_URL === "YOUR_APPS_SCRIPT_URL_HERE") {
+    document.getElementById("config-banner").style.display = "block";
+    setEmpty("⚠️ Script URL configure nahi hua. Setup complete karo.");
+    return;
+  }
+  loadData();
+  setInterval(loadData, 60000);
+}
+
+async function loadData() {
+  try {
+    const res = await fetch(SCRIPT_URL + "?action=fetch&t=" + Date.now());
+    const json = await res.json();
+    if (json.status === "ok") {
+      allData = json.data || [];
+      updateStats();
+      renderTable(allData);
+    }
+  } catch (e) {
+    showToast("Data load failed. Network check karo.", "err");
+  }
+}
+
+function updateStats() {
+  const tot = allData.reduce((a, r) => a + (parseInt(r.vacancies) || 0), 0);
+  document.getElementById("st-entries").textContent = allData.length;
+  document.getElementById("st-total").textContent = tot;
+  document.getElementById("st-avg").textContent = allData.length ? Math.round(tot / allData.length) : 0;
+}
+
+function renderTable(data) {
+  const tbody = document.getElementById("tbl-body");
+  const empty = document.getElementById("empty-state");
+  if (!data.length) {
+    tbody.innerHTML = "";
+    setEmpty("📭 No entries yet. Submit the first one above.");
+    return;
+  }
+  empty.style.display = "none";
+  tbody.innerHTML = data.map((r, i) => `
+    <tr>
+      <td style="color:#bbb;font-size:12px">${i + 1}</td>
+      <td>${escHtml(r.ministry)}</td>
+      <td><span class="badge">${parseInt(r.vacancies) || 0}</span></td>
+      <td style="color:#888;font-size:12px">${escHtml(r.submittedBy || "—")}</td>
+      <td style="color:#bbb;font-size:11px">${escHtml(r.timestamp || "")}</td>
+      <td>
+        <button class="btn btn-danger" style="height:28px;padding:0 10px;font-size:12px"
+          onclick="deleteEntry('${escAttr(r.ministry)}')">🗑️</button>
+      </td>
+    </tr>`).join("");
+}
+
+function filterTable() {
+  const q = document.getElementById("search").value.toLowerCase();
+  const filtered = allData.filter(r => r.ministry.toLowerCase().includes(q));
+  renderTable(filtered);
+}
+
+async function submitEntry() {
+  const ministry = document.getElementById("sel-min").value;
+  const vacancies = document.getElementById("inp-vac").value;
+  const submittedBy = document.getElementById("inp-name").value.trim();
+
+  if (!ministry) { showToast("Ministry/Department select karein", "err"); return; }
+  if (vacancies === "" || parseInt(vacancies) < 0) { showToast("Valid vacancy number darj karein", "err"); return; }
+
+  const btn = document.getElementById("btn-submit");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Saving...';
+
+  try {
+    const url = `${SCRIPT_URL}?action=submit&ministry=${enc(ministry)}&vacancies=${enc(vacancies)}&submittedBy=${enc(submittedBy)}`;
+    const res = await fetch(url);
+    const json = await res.json();
+    if (json.status === "ok") {
+      showToast(json.updated ? "Entry update ho gayi ✓" : "Entry save ho gayi ✓", "ok");
+      clearForm();
+      await loadData();
+    } else {
+      showToast("Error: " + (json.message || "Unknown"), "err");
+    }
+  } catch (e) {
+    showToast("Submit failed. Network check karo.", "err");
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = "✅ Submit entry";
+  }
+}
+
+async function deleteEntry(ministry) {
+  if (!confirm(`"${ministry}" ki entry delete karna chahte hain?`)) return;
+  showLoader(true);
+  try {
+    const url = `${SCRIPT_URL}?action=delete&ministry=${enc(ministry)}`;
+    const res = await fetch(url);
+    const json = await res.json();
+    if (json.status === "ok") {
+      showToast("Entry delete ho gayi", "ok");
+      await loadData();
+    }
+  } catch (e) {
+    showToast("Delete failed.", "err");
+  } finally {
+    showLoader(false);
+  }
+}
+
+function exportCSV() {
+  if (!allData.length) { showToast("Export ke liye data nahi hai", "err"); return; }
+  const rows = [
+    ["S.No.", "Ministry/Department", "US Vacancies", "Submitted By", "Timestamp"],
+    ...allData.map((r, i) => [i + 1, r.ministry, r.vacancies, r.submittedBy || "", r.timestamp || ""])
+  ];
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+  const a = document.createElement("a");
+  a.href = "data:text/csv;charset=utf-8,\uFEFF" + encodeURIComponent(csv);
+  a.download = "US_Vacancy_Data_" + new Date().toISOString().slice(0, 10) + ".csv";
+  a.click();
+  showToast("CSV download ho raha hai ⬇️", "ok");
+}
+
+function clearForm() {
+  document.getElementById("sel-min").value = "";
+  document.getElementById("inp-vac").value = "";
+  document.getElementById("inp-name").value = "";
+}
+
+function setEmpty(msg) {
+  const e = document.getElementById("empty-state");
+  e.style.display = "block";
+  e.innerHTML = msg;
+}
+
+function showToast(msg, type) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = "toast " + (type || "ok") + " show";
+  setTimeout(() => t.classList.remove("show"), 2800);
+}
+
+function showLoader(show) {
+  document.getElementById("loader").className = "loader-overlay" + (show ? " show" : "");
+}
+
+function enc(s) { return encodeURIComponent(s); }
+function escHtml(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function escAttr(s) { return String(s).replace(/'/g,"\\'"); }
+
+init();
+</script>
+</body>
+</html>
