@@ -13,6 +13,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .header p{font-size:13px;color:#666}
 .card{background:#fff;border:1px solid #e0e0d8;border-radius:12px;padding:1.5rem;margin-bottom:1.5rem}
 .card h2{font-size:15px;font-weight:600;color:#1a1a1a;margin-bottom:1rem}
+.card-red{background:#fff5f5;border:1px solid #f5c6c6;border-radius:12px;padding:1.5rem;margin-bottom:1.5rem}
+.card-red h2{font-size:15px;font-weight:600;color:#a32d2d;margin-bottom:4px}
+.card-red .subtitle{font-size:12px;color:#c0392b;margin-bottom:1rem;opacity:0.8}
 label{display:block;font-size:13px;color:#555;margin-bottom:5px}
 select,input[type=number],input[type=text]{width:100%;height:40px;border:1px solid #ccc;border-radius:8px;padding:0 10px;font-size:14px;color:#1a1a1a;background:#fff;outline:none;transition:border 0.15s}
 select:focus,input:focus{border-color:#378add;box-shadow:0 0 0 3px rgba(55,138,221,0.12)}
@@ -33,6 +36,8 @@ select:focus,input:focus{border-color:#378add;box-shadow:0 0 0 3px rgba(55,138,2
 .stat{background:#f5f5f0;border-radius:8px;padding:1rem;text-align:center}
 .stat-num{font-size:26px;font-weight:600;color:#1a1a1a}
 .stat-lbl{font-size:11px;color:#888;margin-top:3px}
+.stat-red{background:#fff0f0}
+.stat-red .stat-num{color:#a32d2d}
 .table-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:13px;min-width:520px}
 th{text-align:left;font-weight:600;font-size:11px;color:#888;padding:8px 10px;border-bottom:1px solid #e8e8e0;white-space:nowrap;text-transform:uppercase;letter-spacing:0.03em}
@@ -56,7 +61,22 @@ tr:hover td{background:#fafaf7}
 .loader-overlay.show{display:flex}
 .refresh-note{font-size:11px;color:#aaa;margin-top:8px;text-align:right}
 .config-banner{background:#fff8e6;border:1px solid #f5d79e;border-radius:8px;padding:12px 16px;margin-bottom:1.5rem;font-size:13px;color:#7a5700;display:none}
-.config-banner a{color:#185fa5}
+
+/* Non-reported grid */
+.nr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;max-height:320px;overflow-y:auto;padding-right:4px}
+.nr-grid::-webkit-scrollbar{width:4px}
+.nr-grid::-webkit-scrollbar-track{background:#fff0f0}
+.nr-grid::-webkit-scrollbar-thumb{background:#f5c6c6;border-radius:4px}
+.nr-item{background:#fff;border:1px solid #f5c6c6;border-radius:7px;padding:8px 12px;font-size:12px;color:#a32d2d;display:flex;align-items:center;gap:7px;line-height:1.3}
+.nr-item .dot{width:7px;height:7px;background:#e74c3c;border-radius:50%;flex-shrink:0}
+.nr-search{width:100%;height:34px;border:1px solid #f5c6c6;border-radius:7px;padding:0 10px;font-size:12px;color:#a32d2d;background:#fff;outline:none;margin-bottom:10px}
+.nr-search::placeholder{color:#e8a0a0}
+.nr-search:focus{border-color:#e74c3c}
+.nr-empty{text-align:center;padding:1.5rem;font-size:13px;color:#27ae60;font-weight:500}
+.progress-bar-wrap{margin-bottom:14px}
+.progress-label{display:flex;justify-content:space-between;font-size:12px;color:#888;margin-bottom:5px}
+.progress-bar{height:8px;background:#f5c6c6;border-radius:10px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,#27ae60,#2ecc71);border-radius:10px;transition:width 0.5s ease}
 </style>
 </head>
 <body>
@@ -66,10 +86,8 @@ tr:hover td{background:#fafaf7}
 
 <div class="wrap">
 
-  <!-- Config warning — shown if Script URL not set -->
   <div class="config-banner" id="config-banner">
-    ⚠️ <strong>Setup pending:</strong> Google Apps Script URL configure nahi hua. 
-    <a href="https://github.com" target="_blank">README padho</a> ya neeche JS mein <code>SCRIPT_URL</code> set karo.
+    ⚠️ <strong>Setup pending:</strong> Google Apps Script URL configure nahi hua.
   </div>
 
   <div class="header">
@@ -80,9 +98,10 @@ tr:hover td{background:#fafaf7}
   <div class="stats">
     <div class="stat"><div class="stat-num" id="st-entries">—</div><div class="stat-lbl">Ministries reported</div></div>
     <div class="stat"><div class="stat-num" id="st-total">—</div><div class="stat-lbl">Total vacancies</div></div>
-    <div class="stat"><div class="stat-num" id="st-avg">—</div><div class="stat-lbl">Avg per Ministry</div></div>
+    <div class="stat stat-red"><div class="stat-num" id="st-pending">—</div><div class="stat-lbl">Yet to report</div></div>
   </div>
 
+  <!-- SUBMIT FORM -->
   <div class="card">
     <h2>📋 Submit vacancy data</h2>
     <div class="full">
@@ -308,8 +327,26 @@ tr:hover td{background:#fafaf7}
     </div>
   </div>
 
+  <!-- NON-REPORTED SECTION -->
+  <div class="card-red" id="nr-card">
+    <h2>🔴 Yet to Report</h2>
+    <div class="subtitle" id="nr-subtitle">Loading...</div>
+    <div class="progress-bar-wrap">
+      <div class="progress-label">
+        <span id="pr-left">0 reported</span>
+        <span id="pr-right">0 total</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="pr-fill" style="width:0%"></div></div>
+    </div>
+    <input class="nr-search" type="text" id="nr-search" placeholder="🔍 Search in pending list..." oninput="filterNonReported()">
+    <div class="nr-grid" id="nr-grid">
+      <div class="nr-empty" style="color:#bbb">Loading...</div>
+    </div>
+  </div>
+
+  <!-- CONSOLIDATED LIST -->
   <div class="card">
-    <h2>📊 Consolidated list — all ministries</h2>
+    <h2>📊 Consolidated list — reported ministries</h2>
     <div class="search-wrap">
       <span>🔍</span>
       <input class="search-bar" type="text" id="search" placeholder="Search Ministry / Department..." oninput="filterTable()">
@@ -344,17 +381,116 @@ tr:hover td{background:#fafaf7}
 
 <script>
 // ============================================================
-// 👇 YAHAN APNA APPS SCRIPT URL PASTE KARO
+// 👇 APNA APPS SCRIPT URL YAHAN HAI — MAT CHHEDO
 // ============================================================
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxqNkIVIpsBtV7yltNDw08ubRXz_pWQgawhzdRSsX9oZI4FCghMb_t5jgx8CC9d3BqF/exec";
 // ============================================================
 
+// Master list — all ministries/departments in dropdown
+const ALL_MINISTRIES = [
+  "Dept. of Agriculture and Farmers Welfare",
+  "Dept. of Agricultural Research and Education",
+  "Ministry of Ayush",
+  "Dept. of Chemicals and Petro-Chemicals",
+  "Dept. of Fertilizers",
+  "Dept. of Pharmaceuticals",
+  "Ministry of Civil Aviation",
+  "Ministry of Coal",
+  "Dept. of Commerce",
+  "Dept. for Promotion of Industry and Internal Trade",
+  "Dept. of Telecommunications",
+  "Dept. of Posts",
+  "Dept. of Consumer Affairs",
+  "Dept. of Food and Public Distribution",
+  "Ministry of Cooperation",
+  "Ministry of Corporate Affairs",
+  "Ministry of Culture",
+  "Dept. of Defence",
+  "Dept. of Military Affairs",
+  "Dept. of Defence Production",
+  "Dept. of Defence Research and Development",
+  "Dept. of Ex-Servicemen Welfare",
+  "Ministry of Development of North Eastern Region",
+  "Ministry of Earth Sciences",
+  "Ministry of Electronics and Information Technology",
+  "Ministry of Environment, Forest and Climate Change",
+  "Ministry of External Affairs",
+  "Dept. of Economic Affairs",
+  "Dept. of Expenditure",
+  "Dept. of Revenue",
+  "Dept. of Investment and Public Asset Management (DIPAM)",
+  "Dept. of Financial Services",
+  "Dept. of Public Enterprises",
+  "Dept. of Fisheries",
+  "Dept. of Animal Husbandry and Dairying",
+  "Ministry of Food Processing Industries",
+  "Dept. of Health and Family Welfare",
+  "Dept. of Health Research",
+  "Ministry of Heavy Industries",
+  "Dept. of Internal Security",
+  "Dept. of States",
+  "Dept. of Official Language",
+  "Dept. of Home",
+  "Dept. of Jammu, Kashmir and Ladakh Affairs",
+  "Dept. of Border Management",
+  "Ministry of Housing and Urban Affairs",
+  "Dept. of School Education and Literacy",
+  "Dept. of Higher Education",
+  "Ministry of Information and Broadcasting",
+  "Dept. of Water Resources, River Development and Ganga Rejuvenation",
+  "Dept. of Drinking Water and Sanitation",
+  "Ministry of Labour and Employment",
+  "Dept. of Legal Affairs",
+  "Legislative Department",
+  "Dept. of Justice",
+  "Ministry of Micro, Small and Medium Enterprises",
+  "Ministry of Mines",
+  "Ministry of Minority Affairs",
+  "Ministry of New and Renewable Energy",
+  "Ministry of Panchayati Raj",
+  "Ministry of Parliamentary Affairs",
+  "Dept. of Personnel and Training",
+  "Dept. of Administrative Reforms and Public Grievances",
+  "Dept. of Pensions and Pensioners Welfare",
+  "Ministry of Petroleum and Natural Gas",
+  "Ministry of Planning",
+  "Ministry of Ports, Shipping and Waterways",
+  "Ministry of Power",
+  "Ministry of Railways",
+  "Ministry of Road Transport and Highways",
+  "Dept. of Rural Development",
+  "Dept. of Land Resources",
+  "Dept. of Science and Technology",
+  "Dept. of Scientific and Industrial Research",
+  "Dept. of Bio-Technology",
+  "Ministry of Skill Development and Entrepreneurship",
+  "Dept. of Social Justice and Empowerment",
+  "Dept. of Empowerment of Persons with Disabilities (Divyangjan)",
+  "Ministry of Statistics and Programme Implementation",
+  "Ministry of Steel",
+  "Ministry of Textiles",
+  "Ministry of Tourism",
+  "Ministry of Tribal Affairs",
+  "Ministry of Women and Child Development",
+  "Dept. of Youth Affairs",
+  "Dept. of Sports",
+  "Dept. of Atomic Energy",
+  "Dept. of Space",
+  "Cabinet Secretariat",
+  "President's Secretariat",
+  "Prime Minister's Office",
+  "NITI Aayog",
+  "National Security Council Secretariat"
+];
+
 let allData = [];
+let nonReported = [];
 
 function init() {
   if (!SCRIPT_URL || SCRIPT_URL === "YOUR_APPS_SCRIPT_URL_HERE") {
     document.getElementById("config-banner").style.display = "block";
-    setEmpty("⚠️ Script URL configure nahi hua. Setup complete karo.");
+    setEmpty("⚠️ Script URL configure nahi hua.");
+    renderNonReported([]);
     return;
   }
   loadData();
@@ -369,17 +505,61 @@ async function loadData() {
       allData = json.data || [];
       updateStats();
       renderTable(allData);
+      computeAndRenderNonReported();
     }
   } catch (e) {
     showToast("Data load failed. Network check karo.", "err");
   }
 }
 
+function computeAndRenderNonReported() {
+  const reportedSet = new Set(allData.map(r => r.ministry.trim()));
+  nonReported = ALL_MINISTRIES.filter(m => !reportedSet.has(m));
+  renderNonReported(nonReported);
+}
+
+function renderNonReported(list) {
+  const grid = document.getElementById("nr-grid");
+  const total = ALL_MINISTRIES.length;
+  const reported = total - nonReported.length;
+  const pct = total > 0 ? Math.round((reported / total) * 100) : 0;
+
+  document.getElementById("nr-subtitle").textContent =
+    list.length === 0 && nonReported.length === 0
+      ? "Sab ministries ne report kar diya! 🎉"
+      : nonReported.length + " ministries / departments abhi pending hain";
+
+  document.getElementById("pr-left").textContent = reported + " reported";
+  document.getElementById("pr-right").textContent = total + " total";
+  document.getElementById("pr-fill").style.width = pct + "%";
+
+  if (nonReported.length === 0) {
+    grid.innerHTML = '<div class="nr-empty">🎉 Sabne report kar diya! Koi pending nahi.</div>';
+    return;
+  }
+
+  if (list.length === 0) {
+    grid.innerHTML = '<div class="nr-empty" style="color:#bbb">No match found in pending list.</div>';
+    return;
+  }
+
+  grid.innerHTML = list.map((m, i) =>
+    `<div class="nr-item"><span class="dot"></span>${escHtml(m)}</div>`
+  ).join("");
+}
+
+function filterNonReported() {
+  const q = document.getElementById("nr-search").value.toLowerCase();
+  const filtered = nonReported.filter(m => m.toLowerCase().includes(q));
+  renderNonReported(filtered);
+}
+
 function updateStats() {
   const tot = allData.reduce((a, r) => a + (parseInt(r.vacancies) || 0), 0);
+  const pending = ALL_MINISTRIES.length - allData.length;
   document.getElementById("st-entries").textContent = allData.length;
   document.getElementById("st-total").textContent = tot;
-  document.getElementById("st-avg").textContent = allData.length ? Math.round(tot / allData.length) : 0;
+  document.getElementById("st-pending").textContent = Math.max(0, pending);
 }
 
 function renderTable(data) {
@@ -415,14 +595,11 @@ async function submitEntry() {
   const ministry = document.getElementById("sel-min").value;
   const vacancies = document.getElementById("inp-vac").value;
   const submittedBy = document.getElementById("inp-name").value.trim();
-
   if (!ministry) { showToast("Ministry/Department select karein", "err"); return; }
   if (vacancies === "" || parseInt(vacancies) < 0) { showToast("Valid vacancy number darj karein", "err"); return; }
-
   const btn = document.getElementById("btn-submit");
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Saving...';
-
   try {
     const url = `${SCRIPT_URL}?action=submit&ministry=${enc(ministry)}&vacancies=${enc(vacancies)}&submittedBy=${enc(submittedBy)}`;
     const res = await fetch(url);
