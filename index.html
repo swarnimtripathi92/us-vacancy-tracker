@@ -59,8 +59,6 @@ th{font-size:11px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spa
 td{padding:10px 8px;border-bottom:1px solid #f5f7fa;color:#1a1a1a;vertical-align:middle}
 tr:last-child td{border-bottom:none}
 .badge-blue{background:#e6f1fb;color:#185fa5;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600}
-.del-btn{height:28px;padding:0 8px;border:1px solid #f5c6c6;border-radius:6px;background:transparent;font-size:13px;color:#a32d2d;cursor:pointer}
-.del-btn:hover{background:#fff0f0}
 .search-wrap{position:relative;margin-bottom:10px}
 .search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:15px;color:#ccc;pointer-events:none}
 .search-bar{width:100%;height:36px;border:1px solid #ccd6e0;border-radius:8px;padding:0 10px 0 32px;font-size:13px;color:#1a1a1a;background:#fff;outline:none}
@@ -332,7 +330,6 @@ tr:last-child td{border-bottom:none}
           <th>Vacancies</th>
           <th>By</th>
           <th>Date</th>
-          <th></th>
         </tr>
       </thead>
       <tbody id="tbl-body"></tbody>
@@ -420,6 +417,22 @@ function updateAll() {
   renderTable(allData);
   computeNR();
   updateCharts();
+  filterDropdown();
+}
+
+// Hide already-reported options from dropdown
+function filterDropdown() {
+  const reported = new Set(allData.map(r => r.ministry.trim()));
+  const sel = document.getElementById('sel-min');
+  Array.from(sel.options).forEach(opt => {
+    if (!opt.value) return; // keep placeholder
+    opt.hidden = reported.has(opt.text.trim());
+  });
+  // Hide optgroup if all its options are hidden
+  Array.from(sel.querySelectorAll('optgroup')).forEach(grp => {
+    const visible = Array.from(grp.querySelectorAll('option')).some(o => !o.hidden);
+    grp.hidden = !visible;
+  });
 }
 
 function updateStats() {
@@ -481,7 +494,6 @@ function renderTable(data) {
       <td><span class="badge-blue">${parseInt(r.vacancies)||0}</span></td>
       <td style="font-size:12px;color:#888">${esc(r.submittedBy||'—')}</td>
       <td style="font-size:11px;color:#bbb">${esc(r.timestamp||'')}</td>
-      <td><button class="del-btn" onclick="deleteEntry('${escAttr(r.ministry)}')">🗑</button></td>
     </tr>`).join('');
 }
 
@@ -571,7 +583,11 @@ async function submitEntry() {
     const res = await fetch(url);
     const json = await res.json();
     if (json.status === "ok") {
-      showToast(json.updated ? "Entry update ho gayi ✓" : "Entry save ho gayi ✓", "ok");
+      if (json.updated) {
+        showToast("Yeh Ministry pehle se submit ho chuki hai ⚠️", "err");
+      } else {
+        showToast("Entry save ho gayi ✓", "ok");
+      }
       document.getElementById('sel-min').value='';
       document.getElementById('inp-vac').value='';
       document.getElementById('inp-name').value='';
@@ -579,17 +595,6 @@ async function submitEntry() {
     } else { showToast("Error: " + (json.message||"Unknown"), "err"); }
   } catch(e) { showToast("Submit failed. Network check karo.", "err"); }
   finally { btn.disabled=false; btn.innerHTML='✅ Submit entry'; }
-}
-
-async function deleteEntry(ministry) {
-  if (!confirm(`"${ministry}" ki entry delete karna chahte hain?`)) return;
-  document.getElementById('loader').className='loader show';
-  try {
-    const res = await fetch(`${SCRIPT_URL}?action=delete&ministry=${enc(ministry)}`);
-    const json = await res.json();
-    if (json.status==="ok") { showToast("Entry delete ho gayi","ok"); await loadData(); }
-  } catch(e){ showToast("Delete failed.","err"); }
-  finally { document.getElementById('loader').className='loader'; }
 }
 
 function exportCSV() {
